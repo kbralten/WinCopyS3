@@ -15,7 +15,7 @@ Write-Host "Building WinCopyS3 Installer..." -ForegroundColor Green
 # Step 1: Build the main application
 Write-Host "1. Building WinCopyS3 application ($Configuration)..." -ForegroundColor Yellow
 $solutionPath = Join-Path $PSScriptRoot "..\WinCopyS3.sln"
-dotnet build $solutionPath -c $Configuration
+dotnet publish ../src/WinCopyS3/WinCopyS3.vbproj -c $Configuration -r win-x64 --self-contained false
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to build WinCopyS3 application"
     exit 1
