@@ -1,0 +1,46 @@
+name: Build Windows MSI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  build-msi:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore NuGet packages
+      run: dotnet restore WinCopyS3.sln
+
+    - name: Build and publish application
+      run: |
+        dotnet publish src/WinCopyS3/WinCopyS3.vbproj -c Release -r win-x64 --self-contained false -o publish
+
+    - name: Install WiX Toolset (NuGet package-based build)
+      run: |
+        dotnet tool install --global Wixtoolset.Toolset -v q || echo "tool already installed"
+        $env:PATH = "$env:PATH;${env:USERPROFILE}\.dotnet\tools"
+        wixtoolset --version
+      shell: powershell
+
+    - name: Build MSI
+      working-directory: installer
+      run: dotnet build WinCopyS3.wixproj -c Release
+
+    - name: Upload MSI artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: WinCopyS3-MSI
+        path: installer\bin\x64\Release\WinCopyS3.msi
+        retention-days: 7

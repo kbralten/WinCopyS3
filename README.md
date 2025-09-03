@@ -174,3 +174,25 @@ Notes
 - The smoke test uses a headless, in-process `FileWatcherService` so it does not require launching the tray UI.
 - The test relies on `minioadmin:minioadmin` credentials for the local MinIO server (default for the downloaded binary). If you change credentials or ports, update `build.ps1` accordingly.
 - Because credentials are stored in `%APPDATA%\WinCopyS3\config.json` for testing, be careful not to commit real AWS credentials into source control.
+
+Continuous Integration (GitHub Actions)
+--------------------------------------
+
+A GitHub Actions workflow is included to build the application and produce the MSI installer on Windows.
+
+- Workflow file: `.github/workflows/windows-msi.yml`
+- Trigger: `push`/`pull_request` to `main`, or manual `workflow_dispatch`
+- What it does:
+  - Restores NuGet packages
+  - Publishes the application (`dotnet publish`)
+  - Builds the WiX installer (`dotnet build installer/WinCopyS3.wixproj -c Release`)
+  - Uploads `WinCopyS3.msi` as a workflow artifact
+
+Artifacts are available in the workflow run under the `WinCopyS3-MSI` artifact name. The MSI path in the job is `installer/bin/x64/Release/WinCopyS3.msi`.
+
+To run the CI locally, you can invoke the build script:
+
+```powershell
+# Build app and installer locally
+.\installer\build-installer.ps1
+```
