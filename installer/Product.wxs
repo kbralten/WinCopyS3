@@ -61,6 +61,12 @@
             Source="..\src\WinCopyS3\bin\Release\net8.0-windows\win-x64\WinCopyS3.dll" />
     </Component>
 
+    <!-- icon file -->
+    <Component Id="WinCopyS3Icon" Directory="INSTALLFOLDER">
+      <File Id="WinCopyS3.ico" 
+            Source="..\src\WinCopyS3\bin\Release\net8.0-windows\win-x64\WinCopyS3.ico" />
+    </Component>
+
     <Component Id="AWSSDKCore" Directory="INSTALLFOLDER">
       <File Id="AWSSDK.Core.dll" 
             Source="..\src\WinCopyS3\bin\Release\net8.0-windows\win-x64\AWSSDK.Core.dll" />
