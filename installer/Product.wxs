@@ -52,34 +52,34 @@
     <!-- Main Executable Component -->
     <Component Id="MainExecutable" Directory="INSTALLFOLDER">
       <File Id="WinCopyS3.exe" 
-            Source="..\src\WinCopyS3\bin\Release\net8.0-windows\WinCopyS3.exe" />
+            Source="..\src\WinCopyS3\bin\Release\net8.0-windows\win-x64\WinCopyS3.exe" />
     </Component>
 
     <!-- Additional DLLs -->
     <Component Id="WinCopyS3Dll" Directory="INSTALLFOLDER">
       <File Id="WinCopyS3.dll" 
-            Source="..\src\WinCopyS3\bin\Release\net8.0-windows\WinCopyS3.dll" />
+            Source="..\src\WinCopyS3\bin\Release\net8.0-windows\win-x64\WinCopyS3.dll" />
     </Component>
 
     <Component Id="AWSSDKCore" Directory="INSTALLFOLDER">
       <File Id="AWSSDK.Core.dll" 
-            Source="..\src\WinCopyS3\bin\Release\net8.0-windows\AWSSDK.Core.dll" />
+            Source="..\src\WinCopyS3\bin\Release\net8.0-windows\win-x64\AWSSDK.Core.dll" />
     </Component>
 
     <Component Id="AWSSDKS3" Directory="INSTALLFOLDER">
       <File Id="AWSSDK.S3.dll" 
-            Source="..\src\WinCopyS3\bin\Release\net8.0-windows\AWSSDK.S3.dll" />
+            Source="..\src\WinCopyS3\bin\Release\net8.0-windows\win-x64\AWSSDK.S3.dll" />
     </Component>
 
     <Component Id="ConfigFiles" Directory="INSTALLFOLDER">
       <File Id="WinCopyS3.deps.json" 
-            Source="..\src\WinCopyS3\bin\Release\net8.0-windows\WinCopyS3.deps.json" 
+            Source="..\src\WinCopyS3\bin\Release\net8.0-windows\win-x64\WinCopyS3.deps.json" 
             KeyPath="yes" />
     </Component>
 
     <Component Id="RuntimeConfig" Directory="INSTALLFOLDER">
       <File Id="WinCopyS3.runtimeconfig.json" 
-            Source="..\src\WinCopyS3\bin\Release\net8.0-windows\WinCopyS3.runtimeconfig.json" />
+            Source="..\src\WinCopyS3\bin\Release\net8.0-windows\win-x64\WinCopyS3.runtimeconfig.json" />
     </Component>
 
     <!-- Start Menu Shortcut -->
