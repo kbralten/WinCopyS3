@@ -50,8 +50,3 @@ Customizations & CI
 Troubleshooting
 - If the build script publishes but `wix build` fails, run `wix build -h` to check available options and ensure the `publish\` folder contains the executable referenced by `Product.wxs`.
 - If the MSI does not create the startup entry, verify you passed `INSTALLSTARTUP=1` during install (the installer will not enable startup by default).
-
-If you want, I can:
-- Add a UI dialog to the MSI that exposes a "Run at startup" checkbox rather than requiring the property be passed on the command line.
-- Add a Desktop shortcut or change the Start Menu placement.
-- Produce a GitHub Actions workflow that builds the MSI on a Windows runner and uploads the MSI as a build artifact.
