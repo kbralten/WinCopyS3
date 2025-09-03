@@ -28,6 +28,7 @@
       <ComponentRef Id="ConfigFiles" />
       <ComponentRef Id="RuntimeConfig" />
       <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="WinCopyS3Icon" />
     </Feature>
 
     <!-- Optional Startup Feature -->
