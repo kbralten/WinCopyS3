@@ -126,7 +126,7 @@ Contributions are welcome! Please feel free to fork the repository, make changes
 License
 -------
 
-This project is licensed under the [MIT License](https://gemini.google.com/app/LICENSE.md).
+This project is licensed under the [GPL v2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html).
 
 Smoke Test (Local MinIO)
 ------------------------
