@@ -23,6 +23,8 @@ $testBucket = 'wincopys3-test'
 $mcExe = Join-Path $root 'mc.exe'
 $appdataDir = Join-Path $env:APPDATA 'WinCopyS3'
 $configPath = Join-Path $appdataDir 'config.json'
+$backupPath = $configPath + '.bak'
+$hadExistingConfig = $false
 
 function Write-Log($msg){ Write-Host "[smoke-test] $msg" }
 
@@ -81,6 +83,11 @@ try {
 
 # Write AppConfig
 if (-not (Test-Path $appdataDir)) { New-Item -ItemType Directory -Path $appdataDir | Out-Null }
+$hadExistingConfig = Test-Path $configPath
+if ($hadExistingConfig) {
+    Copy-Item -Path $configPath -Destination $backupPath -Force
+    Write-Log "Backed up existing config to $backupPath"
+}
 $appcfg = @{
     LocalFolder = (Join-Path $root 'test\watch')
     BucketName = $testBucket
@@ -111,6 +118,22 @@ try {
         Remove-Item -Path $minioData -Recurse -Force
         Remove-Item -Path $testFolder -Recurse -Force
         Write-Log "Removed minio-data directory."
+    }
+    # Restore original app config if it existed, otherwise remove the test config we created
+    try {
+        if ($hadExistingConfig) {
+            if (Test-Path $backupPath) {
+                Move-Item -Path $backupPath -Destination $configPath -Force
+                Write-Log "Restored original config from $backupPath"
+            }
+        } else {
+            if (Test-Path $configPath) {
+                Remove-Item -Path $configPath -Force
+                Write-Log "Removed smoketest config at $configPath"
+            }
+        }
+    } catch {
+        Write-Log "Warning: failed to restore/cleanup config: $_"
     }
     Write-Log 'Cleaned up MinIO process and data.'
 }

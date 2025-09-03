@@ -61,10 +61,13 @@ Namespace WinCopyS3
 
             _watcher = New FileSystemWatcher(_config.LocalFolder)
             _watcher.IncludeSubdirectories = True
-            _watcher.NotifyFilter = NotifyFilters.FileName Or NotifyFilters.DirectoryName Or NotifyFilters.CreationTime
+            ' Monitor filename, directory changes, last write time and creation time so moves/renames and writes are detected
+            _watcher.NotifyFilter = NotifyFilters.FileName Or NotifyFilters.DirectoryName Or NotifyFilters.CreationTime Or NotifyFilters.LastWrite
             AddHandler _watcher.Created, AddressOf OnCreated
             AddHandler _watcher.Changed, AddressOf OnChanged
+            AddHandler _watcher.Renamed, AddressOf OnRenamed
             _watcher.EnableRaisingEvents = True
+            ETWEvents.Log.StartWatching(_config.LocalFolder)
             ' start retry queue processor
             _queueCts = New CancellationTokenSource()
             _queueTask = Task.Run(Function() ProcessRetryQueueAsync(_queueCts.Token))
@@ -94,26 +97,55 @@ Namespace WinCopyS3
                 _queueCts = Nothing
                 _queueTask = Nothing
             End If
+            ETWEvents.Log.StopWatching()
         End Sub
 
         Private Sub OnCreated(sender As Object, e As FileSystemEventArgs)
             Try
                 ' Skip directories, process files only
-                If Directory.Exists(e.FullPath) Then Return
+                If Directory.Exists(e.FullPath) Then
+                    _logger.Info($"OnCreated: directory created, ignoring: {e.FullPath}")
+                    Return
+                End If
 
+                _logger.Info($"OnCreated event: {e.ChangeType} - {e.FullPath}")
+                ETWEvents.Log.FileEvent(e.ChangeType.ToString(), e.FullPath)
                 ' Debounce and schedule processing; actual upload logic will re-check cache and readiness
                 DebounceProcess(e.FullPath)
             Catch ex As Exception
                 _logger.Error($"OnCreated handler error: {ex.Message}")
+                ETWEvents.Log.GeneralError($"OnCreated handler error: {ex.Message}")
             End Try
         End Sub
 
         Private Sub OnChanged(sender As Object, e As FileSystemEventArgs)
             Try
-                If Directory.Exists(e.FullPath) Then Return
+                If Directory.Exists(e.FullPath) Then
+                    _logger.Info($"OnChanged: directory changed, ignoring: {e.FullPath}")
+                    Return
+                End If
+                _logger.Info($"OnChanged event: {e.ChangeType} - {e.FullPath}")
+                ETWEvents.Log.FileEvent(e.ChangeType.ToString(), e.FullPath)
                 DebounceProcess(e.FullPath)
             Catch ex As Exception
                 _logger.Error($"OnChanged handler error: {ex.Message}")
+                ETWEvents.Log.GeneralError($"OnChanged handler error: {ex.Message}")
+            End Try
+        End Sub
+
+        Private Sub OnRenamed(sender As Object, e As RenamedEventArgs)
+            Try
+                ' Treat renames/moves as new files appearing at the destination path
+                If Directory.Exists(e.FullPath) Then
+                    _logger.Info($"OnRenamed: directory renamed/moved, ignoring: {e.FullPath}")
+                    Return
+                End If
+                _logger.Info($"OnRenamed event: {e.ChangeType} - Old: {e.OldFullPath} -> New: {e.FullPath}")
+                ETWEvents.Log.FileRenamed(e.OldFullPath, e.FullPath)
+                DebounceProcess(e.FullPath)
+            Catch ex As Exception
+                _logger.Error($"OnRenamed handler error: {ex.Message}")
+                ETWEvents.Log.GeneralError($"OnRenamed handler error: {ex.Message}")
             End Try
         End Sub
 
@@ -130,10 +162,13 @@ Namespace WinCopyS3
                              If (DateTime.UtcNow - last).TotalMilliseconds < _debounceIntervalMs Then Return
                              _debounceMap.Remove(fullPath)
                          End SyncLock
+                         _logger.Info($"Debounce expired, scheduling readiness check for: {fullPath}")
+                         ETWEvents.Log.DebounceScheduled(fullPath)
                          Try
                              Await EnsureFileReadyAndUploadAsync(fullPath)
                          Catch ex As Exception
                              _logger.Error($"DebounceProcess error for {fullPath}: {ex.Message}")
+                             ETWEvents.Log.GeneralError($"DebounceProcess error for {fullPath}: {ex.Message}")
                          End Try
                      End Function)
         End Sub
@@ -153,6 +188,7 @@ Namespace WinCopyS3
                     Return True
                 End If
 
+                _logger.Info($"EnsureFileReadyAndUploadAsync: starting checks for {relative}")
                 ' Wait for file to be written and unlocked before uploading.
                 Const maxWaitMs As Integer = 10000 ' total timeout (10s)
                 Const pollIntervalMs As Integer = 500
@@ -174,12 +210,14 @@ Namespace WinCopyS3
                                 ' if we can open it exclusively, it's ready
                             End Using
                             fileReady = True
+                            ETWEvents.Log.FileReady(relative)
                             Exit While
                         End If
                     Catch ioex As IOException
                         _logger.Info($"File locked, retrying: {relative} ({ioex.Message})")
                     Catch ex As Exception
                         _logger.Error($"Error while checking file readiness for {relative}: {ex.Message}")
+                        ETWEvents.Log.GeneralError($"Error while checking file readiness for {relative}: {ex.Message}")
                         Return True
                     End Try
 
@@ -190,21 +228,26 @@ Namespace WinCopyS3
                 If Not fileReady Then
                     _logger.Error($"Timed out waiting for file to become ready: {relative}")
                     ' enqueue for retry
+                    _logger.Info($"Enqueuing for retry: {relative}")
                     EnqueueRetry(relative)
+                    ETWEvents.Log.RetryEnqueued(relative)
                     RaiseEvent StatusChanged(Me, New StatusChangedEventArgs("Error"))
                     Return False
                 End If
 
                 _logger.Info($"Uploading {relative}...")
+                ETWEvents.Log.UploadStarted(fullPath, relative)
                 RaiseEvent StatusChanged(Me, New StatusChangedEventArgs($"Uploading {Path.GetFileName(fullPath)}"))
 
                 Await _uploader.UploadAsync(fullPath, _config.BucketName, relative, _config)
                 _cache.Add(relative)
                 _logger.Info($"Uploaded {relative}")
+                ETWEvents.Log.UploadCompleted(fullPath, relative)
                 RaiseEvent StatusChanged(Me, New StatusChangedEventArgs("Monitoring"))
                 Return True
             Catch ex As Exception
                 _logger.Error($"Upload failed: {ex.Message}")
+                ETWEvents.Log.UploadFailed(fullPath, Path.GetRelativePath(_config.LocalFolder, fullPath).Replace("\\", "/"), ex.Message)
                 RaiseEvent StatusChanged(Me, New StatusChangedEventArgs("Error"))
                 Return True
             End Try
@@ -243,6 +286,7 @@ Namespace WinCopyS3
 
                     If attempts >= maxAttempts Then
                         _logger.Error($"Dropping {toProcess} after {attempts} attempts")
+                        ETWEvents.Log.GeneralError($"Dropping {toProcess} after {attempts} attempts")
                         SyncLock _queueLock
                             _retryAttempts.Remove(toProcess)
                         End SyncLock
@@ -251,6 +295,7 @@ Namespace WinCopyS3
 
                     Dim fullPath As String = Path.Combine(_config.LocalFolder, toProcess.Replace("/", Path.DirectorySeparatorChar))
                     Try
+                        ETWEvents.Log.RetryAttempt(toProcess, attempts + 1)
                         Dim ok = Await EnsureFileReadyAndUploadAsync(fullPath)
                         If Not ok Then
                             ' Not ready again: re-enqueue after delay
