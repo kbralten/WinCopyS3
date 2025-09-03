@@ -34,7 +34,7 @@ jobs:
         $installed = dotnet tool list -g | Select-String -Pattern "Wixtoolset.Toolset"
         if (-not $installed) {
           Write-Host "Wixtoolset.Toolset not found, installing..."
-          dotnet tool install --global Wixtoolset.Toolset --version q --add-source https://api.nuget.org/v3/index.json
+          nuget install WixToolset.Sdk
         } else {
           Write-Host "Wixtoolset.Toolset already installed"
         }
