@@ -25,23 +25,23 @@ jobs:
 
     - name: Build and publish application
       run: |
-        dotnet publish src/WinCopyS3/WinCopyS3.vbproj -c Release -r win-x64 --self-contained false -o publish
+        dotnet publish src/WinCopyS3/WinCopyS3.vbproj -c Release -r win-x64 --self-contained false
 
 
-    - name: Install WiX Toolset (NuGet package-based build)
+    - name: Install WiX Toolset
       shell: pwsh
       working-directory: installer
       run: |
-        # Check if the tool is already installed globally
-        $installed = dotnet tool list -g | Select-String -Pattern "Wixtoolset.Toolset"
-        if (-not $installed) {
-          Write-Host "Wixtoolset.Toolset not found, installing..."
-          nuget install WixToolset.Sdk
-        } else {
-          Write-Host "Wixtoolset.Toolset already installed"
-        }
+        # # Check if the tool is already installed globally
+        # $installed = dotnet tool list -g | Select-String -Pattern "Wixtoolset.Toolset"
+        # if (-not $installed) {
+        #   Write-Host "Wixtoolset.Toolset not found, installing..."
+        #   nuget install WixToolset.Sdk
+        # } else {
+        #   Write-Host "Wixtoolset.Toolset already installed"
+        # }
         
-        # Restore the WiX project to ensure all dependencies are available
+        # # Restore the WiX project to ensure all dependencies are available
         dotnet restore .\WinCopyS3.wixproj
 
     - name: Build MSI
