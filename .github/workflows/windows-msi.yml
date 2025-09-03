@@ -34,32 +34,18 @@ jobs:
         $installed = dotnet tool list -g | Select-String -Pattern "Wixtoolset.Toolset"
         if (-not $installed) {
           Write-Host "Wixtoolset.Toolset not found, installing..."
-          try {
-            dotnet tool install --global Wixtoolset.Toolset -v q -s https://api.nuget.org/v3/index.json
-          } catch {
-            Write-Warning "dotnet tool install failed, will attempt Chocolatey fallback"
-            choco install wixtoolset -y
-          }
+          dotnet tool install --global Wixtoolset.Toolset --version q --add-source https://api.nuget.org/v3/index.json
         } else {
           Write-Host "Wixtoolset.Toolset already installed"
         }
         # Ensure the local dotnet tools path is available in PATH for the current step
         $dotnetTools = Join-Path $env:USERPROFILE ".dotnet\tools"
         $env:PATH = "$dotnetTools;$env:PATH"
-        # If choco installed WiX, ensure its default bin is available
-        $wixPaths = @("$env:ProgramFiles\WiX Toolset v3.11\", "$env:ProgramFiles(x86)\WiX Toolset v3.11\")
-        foreach ($p in $wixPaths) {
-          if (Test-Path $p) {
-            $env:PATH = "$p;$env:PATH"
-          }
-        }
-        # Try the tool entry first, then fallback to wix tools
+        # Verify the tool is available
         if (Get-Command wixtoolset -ErrorAction SilentlyContinue) {
           wixtoolset --version
-        } elseif (Get-Command candle -ErrorAction SilentlyContinue) {
-          candle -version
         } else {
-          Write-Warning "WiX binaries not found on PATH after install attempts"
+          Write-Error "WiX toolset not found on PATH after installation"
           exit 1
         }
 
