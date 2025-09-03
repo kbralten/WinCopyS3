@@ -1,0 +1,118 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" 
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="WinCopyS3" 
+           Language="1033" 
+           Version="1.0.0.0" 
+           Manufacturer="WinCopyS3"
+           UpgradeCode="12345678-1234-1234-1234-123456789ABC"
+           Scope="perMachine">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <Media Id="1" Cabinet="media1.cab" EmbedCab="yes" />
+
+    <!-- UI Configuration -->
+    <ui:WixUI Id="WixUI_FeatureTree" />
+    
+    <!-- Property for UI -->
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+	<WixVariable Id="WixUILicenseRtf" Value="LICENSE.rtf" />
+
+    <!-- Main Feature -->
+    <Feature Id="ProductFeature" Title="WinCopyS3" Level="1">
+      <ComponentRef Id="MainExecutable" />
+      <ComponentRef Id="WinCopyS3Dll" />
+      <ComponentRef Id="AWSSDKCore" />
+      <ComponentRef Id="AWSSDKS3" />
+      <ComponentRef Id="ConfigFiles" />
+      <ComponentRef Id="RuntimeConfig" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+
+    <!-- Optional Startup Feature -->
+    <Feature Id="StartupFeature" 
+             Title="Run at Startup" 
+             Description="Automatically start WinCopyS3 when Windows starts"
+             Level="1">
+      <ComponentRef Id="StartupShortcut" />
+    </Feature>
+
+    <!-- Directory Structure -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="WinCopyS3" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="WinCopyS3" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="StartupFolder" />
+
+    <!-- Main Executable Component -->
+    <Component Id="MainExecutable" Directory="INSTALLFOLDER">
+      <File Id="WinCopyS3.exe" 
+            Source="..\src\WinCopyS3\bin\Release\net8.0-windows\WinCopyS3.exe" />
+    </Component>
+
+    <!-- Additional DLLs -->
+    <Component Id="WinCopyS3Dll" Directory="INSTALLFOLDER">
+      <File Id="WinCopyS3.dll" 
+            Source="..\src\WinCopyS3\bin\Release\net8.0-windows\WinCopyS3.dll" />
+    </Component>
+
+    <Component Id="AWSSDKCore" Directory="INSTALLFOLDER">
+      <File Id="AWSSDK.Core.dll" 
+            Source="..\src\WinCopyS3\bin\Release\net8.0-windows\AWSSDK.Core.dll" />
+    </Component>
+
+    <Component Id="AWSSDKS3" Directory="INSTALLFOLDER">
+      <File Id="AWSSDK.S3.dll" 
+            Source="..\src\WinCopyS3\bin\Release\net8.0-windows\AWSSDK.S3.dll" />
+    </Component>
+
+    <Component Id="ConfigFiles" Directory="INSTALLFOLDER">
+      <File Id="WinCopyS3.deps.json" 
+            Source="..\src\WinCopyS3\bin\Release\net8.0-windows\WinCopyS3.deps.json" 
+            KeyPath="yes" />
+    </Component>
+
+    <Component Id="RuntimeConfig" Directory="INSTALLFOLDER">
+      <File Id="WinCopyS3.runtimeconfig.json" 
+            Source="..\src\WinCopyS3\bin\Release\net8.0-windows\WinCopyS3.runtimeconfig.json" />
+    </Component>
+
+    <!-- Start Menu Shortcut -->
+    <Component Id="StartMenuShortcut" Directory="ApplicationProgramsFolder">
+      <Shortcut Id="ApplicationStartMenuShortcut"
+                Name="WinCopyS3"
+                Description="S3 File Uploader"
+                Target="[INSTALLFOLDER]WinCopyS3.exe"
+                WorkingDirectory="INSTALLFOLDER" />
+      <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
+      <RegistryValue Root="HKCU" 
+                     Key="Software\WinCopyS3" 
+                     Name="installed" 
+                     Type="integer" 
+                     Value="1" 
+                     KeyPath="yes" />
+    </Component>
+
+    <!-- Startup Shortcut -->
+    <Component Id="StartupShortcut" Directory="StartupFolder">
+      <Shortcut Id="ApplicationStartupShortcut"
+                Name="WinCopyS3"
+                Description="S3 File Uploader"
+                Target="[INSTALLFOLDER]WinCopyS3.exe"
+                WorkingDirectory="INSTALLFOLDER" />
+      <RegistryValue Root="HKCU" 
+                     Key="Software\WinCopyS3" 
+                     Name="startup" 
+                     Type="integer" 
+                     Value="1" 
+                     KeyPath="yes" />
+    </Component>
+
+  </Package>
+
+</Wix>

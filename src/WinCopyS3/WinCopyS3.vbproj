@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+  <RootNamespace></RootNamespace>
+    <AssemblyName>WinCopyS3</AssemblyName>
+  <StartupObject>Program</StartupObject>
+  <ApplicationIcon>WinCopyS3.ico</ApplicationIcon>
+  <Company>Kevin Bralten</Company>
+  <Product>WinCopyS3</Product>
+  <Description>S3 Folder Sync - simple write-once folder uploader to S3</Description>
+  <Copyright>Copyright (c) 2023-2025 Kevin Bralten</Copyright>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <OptionStrict>On</OptionStrict>
+    <OptionInfer>On</OptionInfer>
+    <OptionExplicit>On</OptionExplicit>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" Version="3.7.301" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Ensure the icon file is copied to the output so the tray can load it at runtime -->
+    <None Include="WinCopyS3.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>
