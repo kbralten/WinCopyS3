@@ -28,11 +28,20 @@ jobs:
         dotnet publish src/WinCopyS3/WinCopyS3.vbproj -c Release -r win-x64 --self-contained false -o publish
 
     - name: Install WiX Toolset (NuGet package-based build)
+      shell: pwsh
       run: |
-        dotnet tool install --global Wixtoolset.Toolset -v q || echo "tool already installed"
-        $env:PATH = "$env:PATH;${env:USERPROFILE}\.dotnet\tools"
+        # Check if the tool is already installed globally
+        $installed = dotnet tool list -g | Select-String -Pattern "Wixtoolset.Toolset"
+        if (-not $installed) {
+          Write-Host "Wixtoolset.Toolset not found, installing..."
+          dotnet tool install --global Wixtoolset.Toolset -v q
+        } else {
+          Write-Host "Wixtoolset.Toolset already installed"
+        }
+        # Ensure the local dotnet tools path is available in PATH for the current step
+        $dotnetTools = Join-Path $env:USERPROFILE ".dotnet\tools"
+        $env:PATH = "$dotnetTools;$env:PATH"
         wixtoolset --version
-      shell: powershell
 
     - name: Build MSI
       working-directory: installer
