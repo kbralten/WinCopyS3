@@ -135,5 +135,12 @@ Namespace WinCopyS3
                 End If
             End SyncLock
         End Sub
+
+        ' Return the number of entries currently in the in-memory cache
+        Public Function EntryCount() As Integer
+            SyncLock _set
+                Return _set.Count
+            End SyncLock
+        End Function
     End Class
 End Namespace

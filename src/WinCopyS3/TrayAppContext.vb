@@ -17,6 +17,7 @@ Namespace WinCopyS3
         Private ReadOnly _cache As CacheStore
         Private ReadOnly _uploader As IS3Uploader
     Private _watcher As IFileWatcherService
+    Private ReadOnly _uiInvoker As Control
 
         Public Sub New()
             _logger = New InMemoryLogger()
@@ -51,6 +52,9 @@ Namespace WinCopyS3
                 .Visible = True,
                 .ContextMenuStrip = cms
             }
+            ' Hidden control used to marshal actions back onto the UI thread
+            _uiInvoker = New Control()
+            _uiInvoker.CreateControl()
             AddHandler _notifyIcon.DoubleClick, AddressOf TrayIcon_DoubleClick
 
             AddHandler _watcher.StatusChanged, AddressOf OnStatusChanged
@@ -58,15 +62,30 @@ Namespace WinCopyS3
             ' Start services if configured
             If _config.IsConfigured Then
                 ' Ensure cache is populated from S3 if configured and missing so we don't re-upload existing objects
-                Try
-                    If _config.RebuildCacheOnStartup AndAlso (Not _cache.CacheFileExists() OrElse _cache.IsEmpty()) Then
-                        _cache.RebuildFromS3Async(_config).GetAwaiter().GetResult()
-                    End If
-                Catch ex As Exception
-                    _logger.Error($"Cache rebuild on startup failed: {ex.Message}")
-                End Try
-
-                _watcher.StartWatching()
+                If _config.RebuildCacheOnStartup AndAlso (Not _cache.CacheFileExists() OrElse _cache.IsEmpty()) Then
+                    ' Run rebuild on a background task to avoid blocking the UI thread (tray menu responsiveness)
+                    UpdateStatus("Rebuilding cache...")
+                    ETWEvents.Log.CacheRebuildStarted()
+                    Task.Run(Sub()
+                                 Try
+                                     _cache.RebuildFromS3Async(_config).GetAwaiter().GetResult()
+                                     ETWEvents.Log.CacheRebuildCompleted(If(_cache.IsEmpty(), 0, -1))
+                                 Catch ex As Exception
+                                     _logger.Error($"Cache rebuild on startup failed: {ex.Message}")
+                                     ETWEvents.Log.GeneralError($"Cache rebuild failed: {ex.Message}")
+                                 Finally
+                                    ' When finished, update UI and start watcher on the UI thread
+                                    Try
+                                        _uiInvoker.BeginInvoke(New MethodInvoker(AddressOf StartWatcherOnUI))
+                                    Catch ex2 As Exception
+                                        _logger.Error($"Failed to start watcher after cache rebuild: {ex2.Message}")
+                                    End Try
+                                 End Try
+                             End Sub)
+                Else
+                    ' No rebuild needed; start watcher immediately
+                    _watcher.StartWatching()
+                End If
             Else
                 UpdateStatus("Not Configured")
                 ShowSetup()
@@ -106,6 +125,20 @@ Namespace WinCopyS3
                     _watcher.StartWatching()
                 End If
             End Using
+        End Sub
+
+        Private Sub StartWatcherOnUI()
+            Try
+                UpdateStatus("Monitoring")
+                ' Report actual cache size if available
+                Try
+                    ETWEvents.Log.CacheRebuildCompleted(_cache.EntryCount())
+                Catch
+                End Try
+                _watcher.StartWatching()
+            Catch ex As Exception
+                _logger.Error($"Error starting watcher on UI thread: {ex.Message}")
+            End Try
         End Sub
 
         Private Sub OnExit(sender As Object, e As EventArgs)

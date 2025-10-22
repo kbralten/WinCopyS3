@@ -41,6 +41,21 @@ Namespace WinCopyS3
             If IsEnabled() Then WriteEvent(5, path)
         End Sub
 
+        <[Event](13, Level:=EventLevel.Informational, Message:="Cache rebuild started")>
+        Public Sub CacheRebuildStarted()
+            If IsEnabled() Then WriteEvent(13)
+        End Sub
+
+        <[Event](14, Level:=EventLevel.Informational, Message:="Cache rebuild completed: {0} entries")>
+        Public Sub CacheRebuildCompleted(count As Integer)
+            If IsEnabled() Then WriteEvent(14, count)
+        End Sub
+
+        <[Event](15, Level:=EventLevel.Informational, Message:="Recent activity: {0}")>
+        Public Sub RecentActivity(msg As String)
+            If IsEnabled() Then WriteEvent(15, msg)
+        End Sub
+
         <[Event](6, Level:=EventLevel.Informational, Message:="File ready: {0}")>
         Public Sub FileReady(path As String)
             If IsEnabled() Then WriteEvent(6, path)

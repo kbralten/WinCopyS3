@@ -12,11 +12,21 @@ Namespace WinCopyS3
         Private ReadOnly _lockObj As New Object()
 
         Public Sub Info(message As String) Implements ILogger.Info
-            Add($"INFO  {DateTime.Now:HH:mm:ss}  {message}")
+            Dim line = $"INFO  {DateTime.Now:HH:mm:ss}  {message}"
+            Add(line)
+            Try
+                ETWEvents.Log.RecentActivity(line)
+            Catch
+            End Try
         End Sub
 
         Public Sub [Error](message As String) Implements ILogger.Error
-            Add($"ERROR {DateTime.Now:HH:mm:ss}  {message}")
+            Dim line = $"ERROR {DateTime.Now:HH:mm:ss}  {message}"
+            Add(line)
+            Try
+                ETWEvents.Log.RecentActivity(line)
+            Catch
+            End Try
         End Sub
 
         Private Sub Add(msg As String)
